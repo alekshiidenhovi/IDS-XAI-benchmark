@@ -67,6 +67,8 @@ jupyter-core==5.8.1
     #   ipykernel
     #   jupyter-client
     #   nbformat
+kagglehub==0.3.12
+    # via -r requirements.in
 kiwisolver==1.4.8
     # via matplotlib
 matplotlib==3.10.1
@@ -89,6 +91,7 @@ numpy==2.2.6
 packaging==25.0
     # via
     #   ipykernel
+    #   kagglehub
     #   matplotlib
     #   pytest
 pandas==2.2.3
@@ -141,7 +144,9 @@ python-dotenv==1.1.0
 pytz==2025.2
     # via pandas
 pyyaml==6.0.2
-    # via wandb
+    # via
+    #   kagglehub
+    #   wandb
 pyzmq==26.4.0
     # via
     #   ipykernel
@@ -151,7 +156,9 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-specifications
 requests==2.32.3
-    # via wandb
+    # via
+    #   kagglehub
+    #   wandb
 rpds-py==0.25.1
     # via
     #   jsonschema
@@ -182,6 +189,8 @@ tornado==6.5.1
     # via
     #   ipykernel
     #   jupyter-client
+tqdm==4.67.1
+    # via kagglehub
 traitlets==5.14.3
     # via
     #   comm
