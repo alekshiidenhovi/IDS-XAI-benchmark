@@ -24,6 +24,8 @@ comm==0.2.2
     # via ipykernel
 contourpy==1.3.2
     # via matplotlib
+cramjam==2.10.0
+    # via fastparquet
 cycler==0.12.1
     # via matplotlib
 debugpy==1.8.14
@@ -36,8 +38,12 @@ executing==2.2.0
     # via stack-data
 fastjsonschema==2.21.1
     # via nbformat
+fastparquet==2024.11.0
+    # via -r requirements.in
 fonttools==4.58.1
     # via matplotlib
+fsspec==2025.5.1
+    # via fastparquet
 gitdb==4.0.12
     # via gitpython
 gitpython==3.1.44
@@ -84,18 +90,22 @@ nest-asyncio==1.6.0
 numpy==2.2.6
     # via
     #   contourpy
+    #   fastparquet
     #   matplotlib
     #   pandas
     #   scikit-learn
     #   scipy
 packaging==25.0
     # via
+    #   fastparquet
     #   ipykernel
     #   kagglehub
     #   matplotlib
     #   pytest
 pandas==2.2.3
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   fastparquet
 parso==0.8.4
     # via jedi
 pexpect==4.9.0
