@@ -20,6 +20,8 @@ click==8.1.8
     # via
     #   -r requirements.in
     #   wandb
+cloudpickle==3.1.1
+    # via shap
 comm==0.2.2
     # via ipykernel
 contourpy==1.3.2
@@ -50,6 +52,8 @@ gitpython==3.1.44
     # via wandb
 idna==3.10
     # via requests
+imageio==2.37.0
+    # via scikit-image
 iniconfig==2.1.0
     # via pytest
 ipykernel==6.29.5
@@ -77,8 +81,16 @@ kagglehub==0.3.12
     # via -r requirements.in
 kiwisolver==1.4.8
     # via matplotlib
-matplotlib==3.10.1
+lazy-loader==0.4
+    # via scikit-image
+lime==0.2.0.1
     # via -r requirements.in
+llvmlite==0.44.0
+    # via numba
+matplotlib==3.10.1
+    # via
+    #   -r requirements.in
+    #   lime
 matplotlib-inline==0.1.7
     # via
     #   ipykernel
@@ -87,32 +99,49 @@ nbformat==5.10.4
     # via -r requirements-dev.in
 nest-asyncio==1.6.0
     # via ipykernel
+networkx==3.5
+    # via scikit-image
+numba==0.61.2
+    # via shap
 numpy==2.2.6
     # via
     #   contourpy
     #   fastparquet
+    #   imageio
+    #   lime
     #   matplotlib
+    #   numba
     #   pandas
+    #   scikit-image
     #   scikit-learn
     #   scipy
+    #   shap
+    #   tifffile
     #   xgboost
 packaging==25.0
     # via
     #   fastparquet
     #   ipykernel
     #   kagglehub
+    #   lazy-loader
     #   matplotlib
     #   pytest
+    #   scikit-image
+    #   shap
 pandas==2.2.3
     # via
     #   -r requirements.in
     #   fastparquet
+    #   shap
 parso==0.8.4
     # via jedi
 pexpect==4.9.0
     # via ipython
 pillow==11.2.1
-    # via matplotlib
+    # via
+    #   imageio
+    #   matplotlib
+    #   scikit-image
 platformdirs==4.3.8
     # via
     #   jupyter-core
@@ -176,11 +205,19 @@ rpds-py==0.25.1
     #   referencing
 ruff==0.11.2
     # via -r requirements-dev.in
+scikit-image==0.25.2
+    # via lime
 scikit-learn==1.6.1
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   lime
+    #   shap
 scipy==1.15.3
     # via
+    #   lime
+    #   scikit-image
     #   scikit-learn
+    #   shap
     #   xgboost
 sentry-sdk==2.29.1
     # via wandb
@@ -188,22 +225,31 @@ setproctitle==1.3.6
     # via wandb
 setuptools==80.9.0
     # via wandb
+shap==0.47.2
+    # via -r requirements.in
 six==1.17.0
     # via
     #   docker-pycreds
     #   python-dateutil
+slicer==0.0.8
+    # via shap
 smmap==5.0.2
     # via gitdb
 stack-data==0.6.3
     # via ipython
 threadpoolctl==3.6.0
     # via scikit-learn
+tifffile==2025.6.11
+    # via scikit-image
 tornado==6.5.1
     # via
     #   ipykernel
     #   jupyter-client
 tqdm==4.67.1
-    # via kagglehub
+    # via
+    #   kagglehub
+    #   lime
+    #   shap
 traitlets==5.14.3
     # via
     #   comm
@@ -219,6 +265,7 @@ typing-extensions==4.14.0
     #   pydantic
     #   pydantic-core
     #   referencing
+    #   shap
     #   wandb
 tzdata==2025.2
     # via pandas
