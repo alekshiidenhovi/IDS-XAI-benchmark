@@ -64,14 +64,14 @@ class UNSW_NB15:
         self,
         feature_matrix: pd.DataFrame,
         target_series: pd.Series,
-        val_size: float,
+        val_proportion: float,
         random_state: int,
         dataset_shuffle: bool,
     ) -> T.Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         X_train, X_validation, y_train, y_validation = train_test_split(
             feature_matrix,
             target_series,
-            test_size=val_size,
+            test_size=val_proportion,
             stratify=target_series,
             random_state=random_state,
             shuffle=dataset_shuffle,

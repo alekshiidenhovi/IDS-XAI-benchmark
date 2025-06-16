@@ -1,4 +1,4 @@
 import typing as T
 
 DATASET_TYPE = T.Literal["training", "testing"]
-ACCELERATOR = T.Literal["cpu", "gpu", "tpu"]
+TRAINING_OBJECTIVE = T.Literal["binary:logistic", "multi:softmax"]
