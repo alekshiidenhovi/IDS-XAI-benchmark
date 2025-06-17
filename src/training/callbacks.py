@@ -36,19 +36,34 @@ class MetricsCallback(TrainingCallback):
 
             train_accuracy = accuracy_score(self.y_train, y_pred_train)
             train_precision = precision_score(
-                self.y_train, y_pred_train, average="weighted"
+                self.y_train, y_pred_train, average="weighted", zero_division=0
             )
-            train_recall = recall_score(self.y_train, y_pred_train, average="weighted")
-            train_f1 = f1_score(self.y_train, y_pred_train, average="weighted")
+            train_recall = recall_score(
+                self.y_train, y_pred_train, average="weighted", zero_division=0
+            )
+            train_f1 = f1_score(
+                self.y_train, y_pred_train, average="weighted", zero_division=0
+            )
 
             val_accuracy = accuracy_score(self.y_validation, y_pred_validation)
             val_precision = precision_score(
-                self.y_validation, y_pred_validation, average="weighted"
+                self.y_validation,
+                y_pred_validation,
+                average="weighted",
+                zero_division=0,
             )
             val_recall = recall_score(
-                self.y_validation, y_pred_validation, average="weighted"
+                self.y_validation,
+                y_pred_validation,
+                average="weighted",
+                zero_division=0,
             )
-            val_f1 = f1_score(self.y_validation, y_pred_validation, average="weighted")
+            val_f1 = f1_score(
+                self.y_validation,
+                y_pred_validation,
+                average="weighted",
+                zero_division=0,
+            )
 
             self.run.log(
                 {
