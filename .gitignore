@@ -6,3 +6,4 @@ data
 private_notebooks
 wandb
 .neptune
+images
