@@ -3,7 +3,7 @@ fastparquet==2024.11.0
 kagglehub==0.3.12
 lime==0.2.0.1
 matplotlib==3.10.1
-neptune-scale==0.15.0
+neptune==1.14.0
 optuna==4.4.0
 pandas==2.2.3
 pydantic==2.10.6
