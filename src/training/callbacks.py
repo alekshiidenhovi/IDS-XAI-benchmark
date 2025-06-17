@@ -4,13 +4,14 @@ import typing as T
 from xgboost.callback import TrainingCallback
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from common.tracking import init_wandb_run
+from common.utils import get_experiment_group_name
+from common.config import TrainingConfig
 
 
 class MetricsCallback(TrainingCallback):
     def __init__(
         self,
-        experiment_group_name: str,
-        step_log_interval: int,
+        training_config: TrainingConfig,
         dtrain: xgb.DMatrix,
         dval: xgb.DMatrix,
         y_train: np.ndarray,
@@ -18,18 +19,18 @@ class MetricsCallback(TrainingCallback):
     ):
         self.run = init_wandb_run(
             experiment_name="Training metrics",
-            experiment_group_name=experiment_group_name,
+            experiment_group_name=get_experiment_group_name(training_config),
             reinit=True,
         )
-        self.step_log_interval = step_log_interval
         self.dtrain = dtrain
         self.dval = dval
         self.y_train = y_train
         self.y_validation = y_validation
+        self.step_log_interval = training_config.step_log_interval
 
     def after_iteration(self, model: xgb.Booster, epoch: int, evals_log: T.Dict):
         if epoch % self.step_log_interval == 0:
-            print(f"Logging metrics for iteration {epoch}")
+            print(f"Logging metrics for iteration {epoch} to W&B")
             y_pred_train = model.predict(self.dtrain)
             y_pred_validation = model.predict(self.dval)
 

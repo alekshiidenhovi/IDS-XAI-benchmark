@@ -1,10 +1,16 @@
 from pydantic import BaseModel, Field
 import typing as T
 from common.tracking import init_wandb_api_client
-from common.types import TRAINING_OBJECTIVE
+from common.types import TRAINING_OBJECTIVE, EVAL_METRIC
+
+T_Config = T.TypeVar("T_Config", bound="BaseConfig")
 
 
-class DatasetConfig(BaseModel):
+class BaseConfig(BaseModel):
+    """Base configuration for all models."""
+
+
+class DatasetConfig(BaseConfig):
     """Configuration for dataset loading and preprocessing.
 
     Contains parameters for data loading, batch sizes, image dimensions,
@@ -23,97 +29,80 @@ class DatasetConfig(BaseModel):
     )
 
 
-class XGBoostClassifierConfig(BaseModel):
+class XGBoostClassifierConfig(BaseConfig):
     """Configuration for the XGBoost Classifier."""
 
     objective: TRAINING_OBJECTIVE = Field(
         default="multi:softmax", description="Learning objective"
     )
-    max_depth: int = Field(default=6, ge=1, description="Maximum depth of trees")
+    max_depth: int = Field(ge=1, description="Maximum depth of trees")
     min_child_weight: int = Field(
-        default=1, ge=0, description="Minimum sum of instance weight needed in a child"
+        ge=0, description="Minimum sum of instance weight needed in a child"
     )
-    learning_rate: float = Field(
-        default=0.1, ge=0.0, le=1.0, description="Boosting learning rate"
-    )
+    learning_rate: float = Field(ge=0.0, le=1.0, description="Boosting learning rate")
     subsample: float = Field(
-        default=0.8,
         ge=0.0,
         le=1.0,
         description="Subsample ratio of the training instances",
     )
     colsample_bytree: float = Field(
-        default=0.8,
         ge=0.0,
         le=1.0,
         description="Subsample ratio of columns when constructing each tree",
     )
-    reg_alpha: float = Field(
-        default=0.01, ge=0.0, description="L1 regularization term on weights"
-    )
-    reg_lambda: float = Field(
-        default=1.0, ge=0.0, description="L2 regularization term on weights"
-    )
+    reg_alpha: float = Field(ge=0.0, description="L1 regularization term on weights")
+    reg_lambda: float = Field(ge=0.0, description="L2 regularization term on weights")
     gamma: float = Field(
-        default=0.0,
         ge=0.0,
         description="Minimum loss reduction required to make a further partition on a leaf node of the tree",
     )
-    eval_metric: T.Literal["logloss", "mlogloss"] = Field(
-        default="mlogloss", description="Evaluation metric"
-    )
     num_class: int = Field(ge=2, description="Number of classes")
-
-
-class OptimizationConfig(BaseModel):
-    """Configuration for the optimization."""
-
     n_estimators: int = Field(
         default=100, ge=1, description="Number of boosting rounds"
+    )
+
+    @property
+    def eval_metric(self) -> EVAL_METRIC:
+        if self.objective == "multi:softmax":
+            return "mlogloss"
+        elif self.objective == "binary:logistic":
+            return "logloss"
+        else:
+            raise ValueError(f"Invalid objective: {self.objective}")
+
+
+class SettingsConfig(BaseConfig):
+    """Configuration for the settings."""
+
+    random_state: int = Field(
+        default=42,
+        description="Seed for training reproducibility",
     )
     step_log_interval: int = Field(
         default=10, ge=1, description="Interval at which to log metrics"
     )
 
 
-class TrainingConfig(DatasetConfig, XGBoostClassifierConfig, OptimizationConfig):
+class TrainingConfig(DatasetConfig, XGBoostClassifierConfig, SettingsConfig):
     """Complete training configuration combining dataset, model and fine-tuning settings.
 
-    Inherits from DatasetConfig, ModelConfig, FinetuningConfig and OptimizerConfig to provide a comprehensive configuration for the entire training pipeline.
+    Inherits from DatasetConfig, XGBoostClassifierConfig and SettingsConfig to provide a comprehensive configuration for the entire training pipeline.
     """
 
-    random_state: int = Field(
-        default=42,
-        description="Seed for training reproducibility",
-    )
+    def get_config(self, config_class: T.Type[T_Config]) -> T_Config:
+        """Get the configuration.
 
-    def get_dataset_config(self) -> DatasetConfig:
-        """Get dataset-specific configuration."""
-        return DatasetConfig(
+        Args:
+            config_class: The configuration class to get the config for.
+
+        Returns:
+            An instance of the specified configuration class.
+        """
+        return config_class(
             **{
                 k: v
                 for k, v in self.model_dump().items()
-                if k in DatasetConfig.model_fields
-            }
-        )
-
-    def get_xgboost_classifier_config(self) -> XGBoostClassifierConfig:
-        """Get XGBoost Classifier configuration."""
-        return XGBoostClassifierConfig(
-            **{
-                k: v
-                for k, v in self.model_dump().items()
-                if k in XGBoostClassifierConfig.model_fields
-            }
-        )
-
-    def get_optimization_config(self) -> OptimizationConfig:
-        """Get optimization configuration."""
-        return OptimizationConfig(
-            **{
-                k: v
-                for k, v in self.model_dump().items()
-                if k in OptimizationConfig.model_fields
+                if k in config_class.model_fields
             }
         )
 
@@ -124,3 +113,10 @@ class TrainingConfig(DatasetConfig, XGBoostClassifierConfig, OptimizationConfig)
         run = wandb_api.run(run_id)
         valid_config = {k: v for k, v in run.config.items() if k in cls.model_fields}
         return cls(**valid_config)
+
+
+def parse_valid_config_kwargs(config_kwargs: dict, config_class: BaseConfig) -> dict:
+    valid_fields = set(config_class.model_fields.keys())
+    return {
+        k: v for k, v in config_kwargs.items() if v is not None and k in valid_fields
+    }
