@@ -3,29 +3,21 @@ import xgboost as xgb
 import typing as T
 from xgboost.callback import TrainingCallback
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from common.tracking import init_wandb_run
-from common.utils import get_experiment_group_name
+from neptune import Run
 from common.config import TrainingConfig
 
 
 class MetricsCallback(TrainingCallback):
     def __init__(
         self,
-        current_datetime: str,
+        run: Run,
         training_config: TrainingConfig,
         dtrain: xgb.DMatrix,
         dval: xgb.DMatrix,
         y_train: np.ndarray,
         y_validation: np.ndarray,
     ):
-        self.run = init_wandb_run(
-            experiment_name="Training metrics",
-            experiment_group_name=get_experiment_group_name(
-                current_datetime=current_datetime,
-                training_config=training_config,
-            ),
-            reinit=True,
-        )
+        self.run = run
         self.dtrain = dtrain
         self.dval = dval
         self.y_train = y_train
@@ -69,18 +61,17 @@ class MetricsCallback(TrainingCallback):
                 zero_division=0,
             )
 
-            self.run.log(
-                {
-                    "iteration": epoch,
-                    "train_loss": evals_log["train"]["mlogloss"][-1],
-                    "train_accuracy": train_accuracy,
-                    "train_precision": train_precision,
-                    "train_recall": train_recall,
-                    "train_f1": train_f1,
-                    "val_loss": evals_log["validation"]["mlogloss"][-1],
-                    "val_accuracy": val_accuracy,
-                    "val_precision": val_precision,
-                    "val_recall": val_recall,
-                    "val_f1": val_f1,
-                }
+            self.run["train/loss"].append(
+                value=evals_log["train"]["mlogloss"][-1], step=epoch
             )
+            self.run["train/accuracy"].append(value=train_accuracy, step=epoch)
+            self.run["train/precision"].append(value=train_precision, step=epoch)
+            self.run["train/recall"].append(value=train_recall, step=epoch)
+            self.run["train/f1"].append(value=train_f1, step=epoch)
+            self.run["validation/loss"].append(
+                value=evals_log["validation"]["mlogloss"][-1], step=epoch
+            )
+            self.run["validation/accuracy"].append(value=val_accuracy, step=epoch)
+            self.run["validation/precision"].append(value=val_precision, step=epoch)
+            self.run["validation/recall"].append(value=val_recall, step=epoch)
+            self.run["validation/f1"].append(value=val_f1, step=epoch)

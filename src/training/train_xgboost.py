@@ -4,7 +4,7 @@ import pandas as pd
 import datetime
 import optuna
 from datasets.unsw import UNSW_NB15, multilabel_target_column
-from common.tracking import init_wandb_run
+from common.tracking import init_neptune_run
 from common.utils import get_experiment_group_name
 from common.config import (
     DatasetConfig,
@@ -72,16 +72,15 @@ def train_xgboost_model(**kwargs):
             **xgboost_config.model_dump(),
         )
 
-        run = init_wandb_run(
-            experiment_name="Experiment config",
-            experiment_group_name=get_experiment_group_name(
+        run = init_neptune_run(
+            experiment_name=get_experiment_group_name(
                 current_datetime=current_datetime,
                 training_config=training_config,
-            ),
-            reinit=False,
+            )
         )
 
-        run.config.update(training_config.model_dump())
+        for key, value in training_config.model_dump().items():
+            run[f"config/{key}"] = value
 
         eval_list = [(dtrain, "train"), (dval, "validation")]
         evals_result = {}
@@ -93,7 +92,7 @@ def train_xgboost_model(**kwargs):
             evals_result=evals_result,
             callbacks=[
                 MetricsCallback(
-                    current_datetime=current_datetime,
+                    run=run,
                     training_config=training_config,
                     dtrain=dtrain,
                     dval=dval,
@@ -102,8 +101,7 @@ def train_xgboost_model(**kwargs):
                 )
             ],
         )
-
-        run.finish()
+        run.stop()
 
         val_loss = evals_result["validation"][xgboost_config.eval_metric][-1]
         return val_loss
