@@ -1,9 +1,10 @@
 import os
-from dotenv import load_dotenv
 import neptune
+import typing as T
+from dotenv import load_dotenv
 
 
-def init_neptune_run(experiment_name: str):
+def init_neptune_run(experiment_name: T.Optional[str] = None):
     """
     Initialize and configure a Neptune run.
 
