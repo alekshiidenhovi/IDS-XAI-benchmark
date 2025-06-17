@@ -11,6 +11,7 @@ from common.config import TrainingConfig
 class MetricsCallback(TrainingCallback):
     def __init__(
         self,
+        current_datetime: str,
         training_config: TrainingConfig,
         dtrain: xgb.DMatrix,
         dval: xgb.DMatrix,
@@ -19,7 +20,10 @@ class MetricsCallback(TrainingCallback):
     ):
         self.run = init_wandb_run(
             experiment_name="Training metrics",
-            experiment_group_name=get_experiment_group_name(training_config),
+            experiment_group_name=get_experiment_group_name(
+                current_datetime=current_datetime,
+                training_config=training_config,
+            ),
             reinit=True,
         )
         self.dtrain = dtrain

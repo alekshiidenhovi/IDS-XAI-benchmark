@@ -1,6 +1,7 @@
 import xgboost as xgb
 import click
 import pandas as pd
+import datetime
 import optuna
 from datasets.unsw import UNSW_NB15, multilabel_target_column
 from common.tracking import init_wandb_run
@@ -31,7 +32,9 @@ from common.types import TRAINING_OBJECTIVE
 @click.option("--n-estimators", type=int, default=None)
 @click.option("--step-log-interval", type=int, default=None)
 @click.option("--random-state", type=int, default=None)
+@click.option("--n-trials", type=int, default=200)
 def train_xgboost_model(**kwargs):
+    current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     dataset_config = DatasetConfig(**parse_valid_config_kwargs(kwargs, DatasetConfig))
     settings_config = SettingsConfig(
         **parse_valid_config_kwargs(kwargs, SettingsConfig)
@@ -72,6 +75,7 @@ def train_xgboost_model(**kwargs):
         run = init_wandb_run(
             experiment_name="Experiment config",
             experiment_group_name=get_experiment_group_name(
+                current_datetime=current_datetime,
                 training_config=training_config,
             ),
             reinit=False,
@@ -89,6 +93,7 @@ def train_xgboost_model(**kwargs):
             evals_result=evals_result,
             callbacks=[
                 MetricsCallback(
+                    current_datetime=current_datetime,
                     training_config=training_config,
                     dtrain=dtrain,
                     dval=dval,
@@ -104,7 +109,7 @@ def train_xgboost_model(**kwargs):
         return val_loss
 
     study = optuna.create_study(study_name="xgboost-training")
-    study.optimize(objective, n_trials=20)
+    study.optimize(objective, n_trials=kwargs.get("n_trials"))
 
 
 if __name__ == "__main__":
