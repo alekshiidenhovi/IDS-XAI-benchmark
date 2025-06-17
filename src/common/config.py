@@ -79,7 +79,7 @@ class SettingsConfig(BaseConfig):
         description="Seed for training reproducibility",
     )
     step_log_interval: int = Field(
-        default=10, ge=1, description="Interval at which to log metrics"
+        default=50, ge=1, description="Interval at which to log metrics"
     )
 
 
