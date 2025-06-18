@@ -1,7 +1,10 @@
 import click
 import optuna
+import shap
+import matplotlib.pyplot as plt
 import xgboost as xgb
 import pandas as pd
+import numpy as np
 import typing as T
 from datasets.unsw import multilabel_target_column, binary_target_column
 from common.tracking import init_neptune_run
@@ -66,7 +69,7 @@ def optimize_xgboost(**kwargs):
         ]
         evals_result = {}
         num_boost_round = xgboost_params.pop("n_estimators")
-        xgb.train(
+        model = xgb.train(
             params=xgboost_params,
             dtrain=dtrain,
             num_boost_round=num_boost_round,
@@ -83,6 +86,37 @@ def optimize_xgboost(**kwargs):
                 )
             ],
         )
+
+        N_SHAP_BG_SAMPLES = 200
+        N_SHAP_EXPLAINED_SAMPLES = 100
+
+        background_data = shap.kmeans(X=Xtrain, k=N_SHAP_BG_SAMPLES).data
+        explainer = shap.TreeExplainer(
+            model=model,
+            data=background_data,
+            feature_names=Xtrain.columns.tolist(),
+            feature_perturbation="auto",
+        )
+
+        validation_indices = np.random.choice(
+            len(Xvalidation), size=N_SHAP_EXPLAINED_SAMPLES, replace=False
+        )
+        validation_data = Xvalidation.iloc[validation_indices]
+
+        shap_values = explainer.shap_values(validation_data)
+
+        plt.figure(figsize=(10, 6))
+        shap.summary_plot(
+            shap_values,
+            validation_data,
+            feature_names=Xtrain.columns.tolist(),
+            show=False,
+        )
+        plt.tight_layout()
+        plt.savefig("images/shap_summary.png", bbox_inches="tight", dpi=300)
+        plt.close()
+        run["explanations/shap_summary"].upload("images/shap_summary.png")
+
         run.stop()
 
         val_loss = evals_result["validation"][training_config.eval_metric][-1]
