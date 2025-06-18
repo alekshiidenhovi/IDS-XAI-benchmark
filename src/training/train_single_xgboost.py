@@ -5,8 +5,9 @@ import click
 from common.tracking import init_neptune_run
 from common.config import TrainingConfig, ParsedBaseTrainingKwargs
 from training.callbacks import MetricsCallback
-from training.prepare_dataset import prepare_dataset
-from common.explanation import get_shap_values, plot_shap_summary
+from datasets.unsw import UNSW_NB15
+from common.storage import TrainingConfigStorage
+from common.utils import get_benchmark_id
 
 
 @click.command()
@@ -29,9 +30,14 @@ def train_single_xgboost(**kwargs) -> float:
 
     parsed_kwargs = ParsedBaseTrainingKwargs.parse_kwargs(**kwargs)
 
-    Xtrain, Xvalidation, ytrain, yvalidation = prepare_dataset(
-        target_column_name=parsed_kwargs.target_column_name,
-        dataset_type="training",
+    train_dataset = UNSW_NB15(dataset_type="training")
+    train_feature_matrix = train_dataset.get_feature_matrix()
+    train_target_series = train_dataset.get_target_series(
+        target_column_name=parsed_kwargs.target_column_name
+    )
+    Xtrain, Xvalidation, ytrain, yvalidation = train_dataset.create_train_val_splits(
+        train_feature_matrix,
+        train_target_series,
         val_proportion=parsed_kwargs.val_proportion,
         random_state=parsed_kwargs.random_state,
         dataset_shuffle=parsed_kwargs.dataset_shuffle,
@@ -55,8 +61,8 @@ def train_single_xgboost(**kwargs) -> float:
         **{**kwargs, **xgboost_params},
     )
 
-    for key, value in training_config.model_dump().items():
-        run[f"config/{key}"] = value
+    training_config_storage = TrainingConfigStorage()
+    training_config_storage.save_to_neptune(run, config=training_config)
 
     dtrain = xgb.DMatrix(Xtrain, label=ytrain)
     dval = xgb.DMatrix(Xvalidation, label=yvalidation)
@@ -79,10 +85,6 @@ def train_single_xgboost(**kwargs) -> float:
             )
         ],
     )
-
-    shap_values = get_shap_values(model, Xtrain, Xvalidation)
-    plot_shap_summary(shap_values, Xtrain, Xvalidation)
-    run["explanations/shap_summary"].upload("images/shap_summary.png")
 
     run.stop()
 

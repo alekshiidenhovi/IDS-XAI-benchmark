@@ -2,14 +2,12 @@ import time
 import pandas as pd
 import xgboost as xgb
 import typing as T
-import os
 import click
-import uuid
-import datetime
 from common.config import TrainingConfig, ParsedBaseTrainingKwargs
 from datasets.unsw import UNSW_NB15
-from common.utils import parse_int_list
+from common.utils import parse_int_list, get_experiment_name, get_benchmark_id
 from common.tracking import init_neptune_run
+from common.storage import TrainingConfigStorage, ModelStorage
 
 
 @click.command()
@@ -28,7 +26,7 @@ from common.tracking import init_neptune_run
 @click.option("--reg-lambda", type=float, default=0.0)
 @click.option("--gamma", type=float, default=0.0)
 def training_time_benchmark(**kwargs):
-    benchmark_id = str(uuid.uuid4())
+    benchmark_id = get_benchmark_id()
 
     parsed_kwargs = ParsedBaseTrainingKwargs(**kwargs)
 
@@ -64,16 +62,16 @@ def training_time_benchmark(**kwargs):
             training_config = TrainingConfig(
                 **{**parsed_kwargs.model_dump(), **xgboost_params},
             )
+            training_config_storage = TrainingConfigStorage()
+            model_storage = ModelStorage()
 
             dtrain = xgb.DMatrix(Xtrain, label=ytrain)
             dval = xgb.DMatrix(Xvalidation, label=yvalidation)
 
-            current_datetime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-            experiment_name = f"{current_datetime}-training-time-benchmark-max_depth-{max_depth}-n_estimators-{n_estimators}"
+            experiment_name = get_experiment_name(max_depth, n_estimators)
             run = init_neptune_run(experiment_name)
             run["sys/tags"].add(["xgboost", "benchmark", "training_time"])
-            for key, value in training_config.model_dump().items():
-                run[f"config/{key}"] = value
+            training_config_storage.save_to_neptune(run, config=training_config)
 
             evals: T.List[T.Tuple[xgb.DMatrix, str]] = [
                 (dtrain, "train"),
@@ -91,12 +89,12 @@ def training_time_benchmark(**kwargs):
             training_end = time.time()
             training_time = training_end - training_start
 
-            local_model_path = (
-                f".artifacts/{benchmark_id}/{experiment_name}/xgb_model.json"
+            model_storage.save_to_neptune(
+                run,
+                benchmark_id=benchmark_id,
+                experiment_name=experiment_name,
+                model=model,
             )
-            os.makedirs(os.path.dirname(local_model_path), exist_ok=True)
-            model.save_model(local_model_path)
-            run["artifacts/model"].upload(local_model_path)
             run["metrics/training_time"] = training_time
 
             run.stop()

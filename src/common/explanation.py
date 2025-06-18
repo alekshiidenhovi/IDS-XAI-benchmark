@@ -1,31 +1,22 @@
 import numpy as np
 import shap
-import xgboost as xgb
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
 def get_shap_values(
-    model: xgb.Booster,
-    Xtrain: pd.DataFrame,
+    explainer: shap.TreeExplainer,
     Xvalidation: pd.DataFrame,
-    N_SHAP_BACKGROUND_SAMPLES: int = 200,
+    yvalidation: pd.Series,
     N_SHAP_EXPLAINED_SAMPLES: int = 100,
 ) -> np.ndarray:
-    background_data = shap.kmeans(X=Xtrain, k=N_SHAP_BACKGROUND_SAMPLES).data
-    explainer = shap.TreeExplainer(
-        model=model,
-        data=background_data,
-        feature_names=Xtrain.columns.tolist(),
-        feature_perturbation="auto",
-    )
-
     validation_indices = np.random.choice(
         len(Xvalidation), size=N_SHAP_EXPLAINED_SAMPLES, replace=False
     )
-    validation_data = Xvalidation.iloc[validation_indices]
+    x_val_samples = Xvalidation.iloc[validation_indices]
+    y_val_samples = yvalidation.iloc[validation_indices]
 
-    shap_values = explainer.shap_values(validation_data)
+    shap_values = explainer.shap_values(x_val_samples, y_val_samples)
     return shap_values
 
 

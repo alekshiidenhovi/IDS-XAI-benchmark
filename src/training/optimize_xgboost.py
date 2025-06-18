@@ -1,13 +1,15 @@
 import click
 import optuna
+import uuid
 import xgboost as xgb
 import pandas as pd
 import typing as T
 from common.tracking import init_neptune_run
 from common.config import TrainingConfig, ParsedBaseTrainingKwargs
-from training.prepare_dataset import prepare_dataset
 from training.callbacks import MetricsCallback
-from common.explanation import get_shap_values, plot_shap_summary
+from datasets.unsw import UNSW_NB15
+from common.storage import TrainingConfigStorage, ModelStorage
+from common.utils import get_experiment_name
 
 
 @click.command()
@@ -18,17 +20,24 @@ from common.explanation import get_shap_values, plot_shap_summary
 @click.option("--random-state", type=int, default=42)
 @click.option("--n-trials", type=int, default=200)
 def optimize_xgboost(**kwargs):
-    def optimize(trial):
-        run = init_neptune_run()
+    benchmark_id = str(uuid.uuid4())
 
+    def optimize(trial):
         parsed_kwargs = ParsedBaseTrainingKwargs.parse_kwargs(**kwargs)
 
-        Xtrain, Xvalidation, ytrain, yvalidation = prepare_dataset(
-            target_column_name=parsed_kwargs.target_column_name,
-            dataset_type="training",
-            val_proportion=parsed_kwargs.val_proportion,
-            random_state=parsed_kwargs.random_state,
-            dataset_shuffle=parsed_kwargs.dataset_shuffle,
+        train_dataset = UNSW_NB15(dataset_type="training")
+        train_feature_matrix = train_dataset.get_feature_matrix()
+        train_target_series = train_dataset.get_target_series(
+            target_column_name=parsed_kwargs.target_column_name
+        )
+        Xtrain, Xvalidation, ytrain, yvalidation = (
+            train_dataset.create_train_val_splits(
+                train_feature_matrix,
+                train_target_series,
+                val_proportion=parsed_kwargs.val_proportion,
+                random_state=parsed_kwargs.random_state,
+                dataset_shuffle=parsed_kwargs.dataset_shuffle,
+            )
         )
 
         xgboost_params = {
@@ -49,8 +58,17 @@ def optimize_xgboost(**kwargs):
             **{**kwargs, **xgboost_params},
         )
 
-        for key, value in training_config.model_dump().items():
-            run[f"config/{key}"] = value
+        experiment_name = get_experiment_name(
+            max_depth=training_config.max_depth,
+            n_estimators=training_config.n_estimators,
+        )
+        run = init_neptune_run(experiment_name)
+        run["sys/tags"].add(["xgboost", "optuna", "training"])
+
+        training_config_storage = TrainingConfigStorage()
+        model_storage = ModelStorage()
+
+        training_config_storage.save_to_neptune(run, config=training_config)
 
         dtrain = xgb.DMatrix(Xtrain, label=ytrain)
         dval = xgb.DMatrix(Xvalidation, label=yvalidation)
@@ -79,9 +97,9 @@ def optimize_xgboost(**kwargs):
             ],
         )
 
-        shap_values = get_shap_values(model, Xtrain, Xvalidation)
-        plot_shap_summary(shap_values, Xtrain, Xvalidation)
-        run["explanations/shap_summary"].upload("images/shap_summary.png")
+        model_storage.save_to_neptune(
+            run, benchmark_id=benchmark_id, experiment_name=experiment_name, model=model
+        )
 
         run.stop()
 
