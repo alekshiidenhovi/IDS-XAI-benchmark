@@ -1,15 +1,13 @@
 import click
 import optuna
-import shap
-import matplotlib.pyplot as plt
 import xgboost as xgb
 import pandas as pd
-import numpy as np
 import typing as T
 from common.tracking import init_neptune_run
 from common.config import TrainingConfig, ParsedBaseTrainingKwargs
 from training.prepare_dataset import prepare_dataset
 from training.callbacks import MetricsCallback
+from common.explanation import get_shap_values, plot_shap_summary
 
 
 @click.command()
@@ -81,34 +79,8 @@ def optimize_xgboost(**kwargs):
             ],
         )
 
-        N_SHAP_BG_SAMPLES = 200
-        N_SHAP_EXPLAINED_SAMPLES = 100
-
-        background_data = shap.kmeans(X=Xtrain, k=N_SHAP_BG_SAMPLES).data
-        explainer = shap.TreeExplainer(
-            model=model,
-            data=background_data,
-            feature_names=Xtrain.columns.tolist(),
-            feature_perturbation="auto",
-        )
-
-        validation_indices = np.random.choice(
-            len(Xvalidation), size=N_SHAP_EXPLAINED_SAMPLES, replace=False
-        )
-        validation_data = Xvalidation.iloc[validation_indices]
-
-        shap_values = explainer.shap_values(validation_data)
-
-        plt.figure(figsize=(10, 6))
-        shap.summary_plot(
-            shap_values,
-            validation_data,
-            feature_names=Xtrain.columns.tolist(),
-            show=False,
-        )
-        plt.tight_layout()
-        plt.savefig("images/shap_summary.png", bbox_inches="tight", dpi=300)
-        plt.close()
+        shap_values = get_shap_values(model, Xtrain, Xvalidation)
+        plot_shap_summary(shap_values, Xtrain, Xvalidation)
         run["explanations/shap_summary"].upload("images/shap_summary.png")
 
         run.stop()
