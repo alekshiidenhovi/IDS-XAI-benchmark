@@ -1,5 +1,6 @@
 .venv
 .env
+.artifacts
 .kaggle
 __pycache__
 data
