@@ -5,11 +5,10 @@ import shap
 import numpy as np
 import matplotlib.pyplot as plt
 import click
-from datasets.unsw import multilabel_target_column, binary_target_column
 from common.tracking import init_neptune_run
-from common.config import TrainingConfig
-from training.prepare_dataset import prepare_dataset
+from common.config import TrainingConfig, ParsedBaseTrainingKwargs
 from training.callbacks import MetricsCallback
+from training.prepare_dataset import prepare_dataset
 
 
 @click.command()
@@ -30,19 +29,14 @@ from training.callbacks import MetricsCallback
 def train_single_xgboost(**kwargs) -> float:
     run = init_neptune_run()
 
-    if kwargs.get("objective") == "multi:softmax":
-        target_column_name = multilabel_target_column
-    elif kwargs.get("objective") == "binary:logistic":
-        target_column_name = binary_target_column
-    else:
-        raise ValueError(f"Invalid objective: {kwargs.get('objective')}")
+    parsed_kwargs = ParsedBaseTrainingKwargs.parse_kwargs(**kwargs)
 
     Xtrain, Xvalidation, ytrain, yvalidation = prepare_dataset(
-        target_column_name=target_column_name,
+        target_column_name=parsed_kwargs.target_column_name,
         dataset_type="training",
-        val_proportion=kwargs.get("val_proportion"),
-        random_state=kwargs.get("random_state"),
-        dataset_shuffle=kwargs.get("dataset_shuffle"),
+        val_proportion=parsed_kwargs.val_proportion,
+        random_state=parsed_kwargs.random_state,
+        dataset_shuffle=parsed_kwargs.dataset_shuffle,
     )
 
     xgboost_params = {
@@ -55,6 +49,7 @@ def train_single_xgboost(**kwargs) -> float:
         "reg_alpha": kwargs.get("reg_alpha"),
         "reg_lambda": kwargs.get("reg_lambda"),
         "gamma": kwargs.get("gamma"),
+        "n_estimators": kwargs.get("n_estimators"),
         "num_class": len(pd.unique(ytrain)),
     }
 
@@ -69,10 +64,11 @@ def train_single_xgboost(**kwargs) -> float:
     dval = xgb.DMatrix(Xvalidation, label=yvalidation)
 
     evals: T.List[T.Tuple[xgb.DMatrix, str]] = [(dtrain, "train"), (dval, "validation")]
+    num_boost_round = xgboost_params.pop("n_estimators")
     model = xgb.train(
         params=xgboost_params,
         dtrain=dtrain,
-        num_boost_round=training_config.n_estimators,
+        num_boost_round=num_boost_round,
         evals=evals,
         callbacks=[
             MetricsCallback(

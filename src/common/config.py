@@ -3,6 +3,41 @@ from common.types import TRAINING_OBJECTIVE, EVAL_METRIC
 from datasets.unsw import multilabel_target_column, binary_target_column
 
 
+class ParsedBaseTrainingKwargs(BaseModel):
+    """
+    Training kwargs for xgboost.
+    """
+
+    val_proportion: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="Proportion of the training dataset to use for validation",
+    )
+    dataset_shuffle: bool = Field(
+        description="Whether to shuffle the dataset",
+    )
+    objective: TRAINING_OBJECTIVE = Field(description="Learning objective")
+    step_log_interval: int = Field(ge=1, description="Interval at which to log metrics")
+    random_state: int = Field(
+        description="Seed for training reproducibility",
+    )
+
+    @property
+    def target_column_name(self) -> str:
+        if self.objective == "multi:softmax":
+            return multilabel_target_column
+        elif self.objective == "binary:logistic":
+            return binary_target_column
+        else:
+            raise ValueError(f"Invalid objective: {self.objective}")
+
+    @classmethod
+    def parse_kwargs(cls, **kwargs) -> "ParsedBaseTrainingKwargs":
+        valid_fields = cls.model_fields.keys()
+        parsed_kwargs = {k: v for k, v in kwargs.items() if k in valid_fields}
+        return cls.model_validate(parsed_kwargs)
+
+
 class TrainingConfig(BaseModel):
     """Configuration for dataset loading and preprocessing.
 

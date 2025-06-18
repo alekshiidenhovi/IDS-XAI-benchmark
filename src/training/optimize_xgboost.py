@@ -6,9 +6,8 @@ import xgboost as xgb
 import pandas as pd
 import numpy as np
 import typing as T
-from datasets.unsw import multilabel_target_column, binary_target_column
 from common.tracking import init_neptune_run
-from common.config import TrainingConfig
+from common.config import TrainingConfig, ParsedBaseTrainingKwargs
 from training.prepare_dataset import prepare_dataset
 from training.callbacks import MetricsCallback
 
@@ -24,19 +23,14 @@ def optimize_xgboost(**kwargs):
     def optimize(trial):
         run = init_neptune_run()
 
-        if kwargs.get("objective") == "multi:softmax":
-            target_column_name = multilabel_target_column
-        elif kwargs.get("objective") == "binary:logistic":
-            target_column_name = binary_target_column
-        else:
-            raise ValueError(f"Invalid objective: {kwargs.get('objective')}")
+        parsed_kwargs = ParsedBaseTrainingKwargs.parse_kwargs(**kwargs)
 
         Xtrain, Xvalidation, ytrain, yvalidation = prepare_dataset(
-            target_column_name=target_column_name,
+            target_column_name=parsed_kwargs.target_column_name,
             dataset_type="training",
-            val_proportion=kwargs.get("val_proportion"),
-            random_state=kwargs.get("random_state"),
-            dataset_shuffle=kwargs.get("dataset_shuffle"),
+            val_proportion=parsed_kwargs.val_proportion,
+            random_state=parsed_kwargs.random_state,
+            dataset_shuffle=parsed_kwargs.dataset_shuffle,
         )
 
         xgboost_params = {
