@@ -61,17 +61,29 @@ class MetricsCallback(TrainingCallback):
                 zero_division=0,
             )
 
+            if "validation" not in evals_log:
+                evals_log["validation"] = {}
+
+            for metric_name in ["acc", "prec", "rec", "f1"]:
+                if metric_name not in evals_log["validation"]:
+                    evals_log["validation"][metric_name] = []
+
+            evals_log["validation"]["acc"].append(val_accuracy)
+            evals_log["validation"]["prec"].append(val_precision)
+            evals_log["validation"]["rec"].append(val_recall)
+            evals_log["validation"]["f1"].append(val_f1)
+
             self.run["train/loss"].append(
                 value=evals_log["train"]["mlogloss"][-1], step=epoch
             )
-            self.run["train/accuracy"].append(value=train_accuracy, step=epoch)
-            self.run["train/precision"].append(value=train_precision, step=epoch)
-            self.run["train/recall"].append(value=train_recall, step=epoch)
+            self.run["train/acc"].append(value=train_accuracy, step=epoch)
+            self.run["train/prec"].append(value=train_precision, step=epoch)
+            self.run["train/rec"].append(value=train_recall, step=epoch)
             self.run["train/f1"].append(value=train_f1, step=epoch)
             self.run["validation/loss"].append(
                 value=evals_log["validation"]["mlogloss"][-1], step=epoch
             )
-            self.run["validation/accuracy"].append(value=val_accuracy, step=epoch)
-            self.run["validation/precision"].append(value=val_precision, step=epoch)
-            self.run["validation/recall"].append(value=val_recall, step=epoch)
+            self.run["validation/acc"].append(value=val_accuracy, step=epoch)
+            self.run["validation/prec"].append(value=val_precision, step=epoch)
+            self.run["validation/rec"].append(value=val_recall, step=epoch)
             self.run["validation/f1"].append(value=val_f1, step=epoch)

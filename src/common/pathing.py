@@ -87,5 +87,16 @@ def get_explanation_time_metrics_file_path(
     )
 
 
+def get_local_optimization_metrics_file_path(
+    dir_path: str,
+    benchmark_id: str,
+) -> str:
+    return os.path.join(
+        dir_path,
+        benchmark_id,
+        "optimization_metrics.json",
+    )
+
+
 def create_dir_if_not_exists(file_path: str):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
