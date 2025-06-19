@@ -8,11 +8,16 @@ import xgboost as xgb
 
 from common.config import SettingsConfig, TrainingConfig
 from common.metrics import OptimizationTimeMetrics, TrialMetrics
-from common.pathing import get_local_optimization_metrics_file_path
+from common.param_ranges import XGBoostParamRanges
+from common.pathing import (
+    get_local_optimization_metrics_file_path,
+    get_local_xgb_param_ranges_file_path,
+)
 from common.tracking import init_neptune_run
 from common.utils import get_benchmark_id, get_current_datetime, parse_int_list
 from datasets.unsw import UNSW_NB15
 from storage.optimization_metrics import LocalOptimizationMetricsStorage
+from storage.xgb_params import LocalXGBoostParamRangesStorage
 
 
 @click.command()
@@ -31,6 +36,7 @@ def optimize_xgboost(**kwargs):
     ## Storage ##
 
     local_optimization_metrics_storage = LocalOptimizationMetricsStorage()
+    local_xgb_param_ranges_storage = LocalXGBoostParamRangesStorage()
 
     ## Settings config ##
 
@@ -67,6 +73,18 @@ def optimize_xgboost(**kwargs):
     total_execution_times_per_study: T.List[float] = []
     trials: T.List[TrialMetrics] = []
 
+    xgb_param_ranges = XGBoostParamRanges(
+        max_depth=[2, 12],
+        min_child_weight=[0, 3],
+        learning_rate=[0.001, 0.1],
+        subsample=[0.6, 1.0],
+        colsample_bytree=[0.6, 1.0],
+        reg_alpha=[0.0, 1.0],
+        reg_lambda=[0.0, 1.0],
+        gamma=[0.0, 1.0],
+        n_estimators=[100, 1000],
+    )
+
     for trial_idx, n_trials in enumerate(n_trials_list):
         validation_losses: T.List[float] = []
         execution_times: T.List[float] = []
@@ -76,15 +94,49 @@ def optimize_xgboost(**kwargs):
 
             xgboost_params = {
                 "objective": settings_config.objective,
-                "max_depth": trial.suggest_int("max_depth", 2, 12),
-                "min_child_weight": trial.suggest_int("min_child_weight", 0, 3),
-                "learning_rate": trial.suggest_float("learning_rate", 0.001, 0.1),
-                "subsample": trial.suggest_float("subsample", 0.6, 1.0),
-                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
-                "reg_alpha": trial.suggest_float("reg_alpha", 0.0, 1.0),
-                "reg_lambda": trial.suggest_float("reg_lambda", 0.0, 1.0),
-                "gamma": trial.suggest_float("gamma", 0.0, 1.0),
-                "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
+                "max_depth": trial.suggest_int(
+                    "max_depth",
+                    xgb_param_ranges.max_depth[0],
+                    xgb_param_ranges.max_depth[1],
+                ),
+                "min_child_weight": trial.suggest_int(
+                    "min_child_weight",
+                    xgb_param_ranges.min_child_weight[0],
+                    xgb_param_ranges.min_child_weight[1],
+                ),
+                "learning_rate": trial.suggest_float(
+                    "learning_rate",
+                    xgb_param_ranges.learning_rate[0],
+                    xgb_param_ranges.learning_rate[1],
+                ),
+                "subsample": trial.suggest_float(
+                    "subsample",
+                    xgb_param_ranges.subsample[0],
+                    xgb_param_ranges.subsample[1],
+                ),
+                "colsample_bytree": trial.suggest_float(
+                    "colsample_bytree",
+                    xgb_param_ranges.colsample_bytree[0],
+                    xgb_param_ranges.colsample_bytree[1],
+                ),
+                "reg_alpha": trial.suggest_float(
+                    "reg_alpha",
+                    xgb_param_ranges.reg_alpha[0],
+                    xgb_param_ranges.reg_alpha[1],
+                ),
+                "reg_lambda": trial.suggest_float(
+                    "reg_lambda",
+                    xgb_param_ranges.reg_lambda[0],
+                    xgb_param_ranges.reg_lambda[1],
+                ),
+                "gamma": trial.suggest_float(
+                    "gamma", xgb_param_ranges.gamma[0], xgb_param_ranges.gamma[1]
+                ),
+                "n_estimators": trial.suggest_int(
+                    "n_estimators",
+                    xgb_param_ranges.n_estimators[0],
+                    xgb_param_ranges.n_estimators[1],
+                ),
                 "num_class": len(pd.unique(ytrain)),
             }
 
@@ -153,6 +205,15 @@ def optimize_xgboost(**kwargs):
     )
     local_optimization_metrics_storage.save_to_storage(
         optimization_time_metrics, local_optimization_metrics_file_path
+    )
+
+    local_xgb_param_ranges_file_path = get_local_xgb_param_ranges_file_path(
+        local_xgb_param_ranges_storage.dir_path,
+        benchmark_id,
+        local_xgb_param_ranges_storage.file_name,
+    )
+    local_xgb_param_ranges_storage.save_to_storage(
+        xgb_param_ranges, local_xgb_param_ranges_file_path
     )
 
     run.stop()

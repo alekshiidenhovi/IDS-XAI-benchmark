@@ -98,5 +98,17 @@ def get_local_optimization_metrics_file_path(
     )
 
 
+def get_local_xgb_param_ranges_file_path(
+    dir_path: str,
+    benchmark_id: str,
+    file_name: str,
+) -> str:
+    return os.path.join(
+        dir_path,
+        benchmark_id,
+        file_name,
+    )
+
+
 def create_dir_if_not_exists(file_path: str):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
