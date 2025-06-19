@@ -1,12 +1,29 @@
+import typing as T
+
 from pydantic import BaseModel, Field
 
 from common.types import EVAL_METRIC, TRAINING_OBJECTIVE
 from datasets.unsw import binary_target_column, multilabel_target_column
 
 
-class ParsedBaseTrainingKwargs(BaseModel):
+class SHAPConfig(BaseModel):
+    n_shap_background_samples: T.List[int] = Field(
+        description="Number of background samples for SHAP"
+    )
+    n_shap_explained_samples: T.List[int] = Field(
+        description="Number of explained samples for SHAP"
+    )
+
+    @classmethod
+    def parse_kwargs(cls, **kwargs) -> "SHAPConfig":
+        valid_fields = cls.model_fields.keys()
+        parsed_kwargs = {k: v for k, v in kwargs.items() if k in valid_fields}
+        return cls.model_validate(parsed_kwargs)
+
+
+class SettingsConfig(BaseModel):
     """
-    Training kwargs for xgboost.
+    Base settings for training.
     """
 
     val_proportion: float = Field(
@@ -17,11 +34,12 @@ class ParsedBaseTrainingKwargs(BaseModel):
     dataset_shuffle: bool = Field(
         description="Whether to shuffle the dataset",
     )
+
     objective: TRAINING_OBJECTIVE = Field(description="Learning objective")
-    step_log_interval: int = Field(ge=1, description="Interval at which to log metrics")
     random_state: int = Field(
         description="Seed for training reproducibility",
     )
+    step_log_interval: int = Field(ge=1, description="Interval at which to log metrics")
 
     @property
     def target_column_name(self) -> str:
@@ -33,29 +51,19 @@ class ParsedBaseTrainingKwargs(BaseModel):
             raise ValueError(f"Invalid objective: {self.objective}")
 
     @classmethod
-    def parse_kwargs(cls, **kwargs) -> "ParsedBaseTrainingKwargs":
+    def parse_kwargs(cls, **kwargs) -> "SettingsConfig":
         valid_fields = cls.model_fields.keys()
         parsed_kwargs = {k: v for k, v in kwargs.items() if k in valid_fields}
         return cls.model_validate(parsed_kwargs)
 
 
-class TrainingConfig(BaseModel):
+class TrainingConfig(SettingsConfig):
     """Configuration for dataset loading and preprocessing.
 
     Contains parameters for data loading, batch sizes, image dimensions,
     dataset splits, and sampling configurations for training, validation and testing.
     """
 
-    val_proportion: float = Field(
-        ge=0.0,
-        le=1.0,
-        description="Proportion of the training dataset to use for validation",
-    )
-    dataset_shuffle: bool = Field(
-        description="Whether to shuffle the dataset",
-    )
-
-    objective: TRAINING_OBJECTIVE = Field(description="Learning objective")
     max_depth: int = Field(ge=1, description="Maximum depth of trees")
     min_child_weight: int = Field(
         ge=0, description="Minimum sum of instance weight needed in a child"
@@ -79,11 +87,6 @@ class TrainingConfig(BaseModel):
     )
     num_class: int = Field(ge=2, description="Number of classes")
     n_estimators: int = Field(ge=1, description="Number of boosting rounds")
-
-    random_state: int = Field(
-        description="Seed for training reproducibility",
-    )
-    step_log_interval: int = Field(ge=1, description="Interval at which to log metrics")
 
     @property
     def eval_metric(self) -> EVAL_METRIC:
