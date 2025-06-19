@@ -1,13 +1,15 @@
 import time
+import typing as T
+
+import click
 import pandas as pd
 import xgboost as xgb
-import typing as T
-import click
-from common.config import TrainingConfig, ParsedBaseTrainingKwargs
-from datasets.unsw import UNSW_NB15
-from common.utils import parse_int_list, get_experiment_name, get_benchmark_id
+
+from common.config import ParsedBaseTrainingKwargs, TrainingConfig
+from common.storage import ModelStorage, TrainingConfigStorage
 from common.tracking import init_neptune_run
-from common.storage import TrainingConfigStorage, ModelStorage
+from common.utils import get_benchmark_id, get_experiment_name, parse_int_list
+from datasets.unsw import UNSW_NB15
 
 
 @click.command()

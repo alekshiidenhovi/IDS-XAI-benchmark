@@ -1,13 +1,15 @@
-import xgboost as xgb
-import pandas as pd
 import typing as T
+
 import click
-from common.tracking import init_neptune_run
-from common.config import TrainingConfig, ParsedBaseTrainingKwargs
-from training.callbacks import MetricsCallback
-from datasets.unsw import UNSW_NB15
+import pandas as pd
+import xgboost as xgb
+
+from common.config import ParsedBaseTrainingKwargs, TrainingConfig
 from common.storage import TrainingConfigStorage
+from common.tracking import init_neptune_run
 from common.utils import get_benchmark_id
+from datasets.unsw import UNSW_NB15
+from training.callbacks import MetricsCallback
 
 
 @click.command()

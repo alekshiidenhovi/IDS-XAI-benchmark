@@ -1,15 +1,17 @@
+import time
+import typing as T
+
 import click
 import optuna
-import uuid
-import xgboost as xgb
 import pandas as pd
-import typing as T
+import xgboost as xgb
+
+from common.config import ParsedBaseTrainingKwargs, TrainingConfig
+from common.storage import ModelStorage, TrainingConfigStorage
 from common.tracking import init_neptune_run
-from common.config import TrainingConfig, ParsedBaseTrainingKwargs
-from training.callbacks import MetricsCallback
+from common.utils import get_benchmark_id, get_experiment_name
 from datasets.unsw import UNSW_NB15
-from common.storage import TrainingConfigStorage, ModelStorage
-from common.utils import get_experiment_name
+from training.callbacks import MetricsCallback
 
 
 @click.command()
@@ -20,7 +22,7 @@ from common.utils import get_experiment_name
 @click.option("--random-state", type=int, default=42)
 @click.option("--n-trials", type=int, default=200)
 def optimize_xgboost(**kwargs):
-    benchmark_id = str(uuid.uuid4())
+    benchmark_id = get_benchmark_id()
 
     def optimize(trial):
         parsed_kwargs = ParsedBaseTrainingKwargs.parse_kwargs(**kwargs)

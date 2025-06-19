@@ -1,6 +1,7 @@
 import os
-import neptune
 import typing as T
+
+import neptune
 from dotenv import load_dotenv
 
 

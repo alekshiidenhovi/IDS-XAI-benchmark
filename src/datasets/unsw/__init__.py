@@ -1,9 +1,11 @@
-import pandas as pd
-import kagglehub
 import typing as T
-from common.types import DATASET_TYPE
-from sklearn.preprocessing import LabelEncoder
+
+import kagglehub
+import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
+from common.types import DATASET_TYPE
 
 
 class UNSW_NB15:

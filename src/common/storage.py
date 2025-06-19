@@ -1,9 +1,11 @@
 import os
-from typing import TypeVar, Type, Generic
-from pydantic import BaseModel
-from common.config import TrainingConfig
+from typing import Generic, Type, TypeVar
+
 import neptune
 import xgboost as xgb
+from pydantic import BaseModel
+
+from common.config import TrainingConfig
 
 T = TypeVar("T", bound="NeptuneStorage")
 

@@ -1,9 +1,10 @@
+import typing as T
+
 import numpy as np
 import xgboost as xgb
-import typing as T
-from xgboost.callback import TrainingCallback
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from neptune import Run
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from xgboost.callback import TrainingCallback
 
 
 class MetricsCallback(TrainingCallback):

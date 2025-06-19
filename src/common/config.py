@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
-from common.types import TRAINING_OBJECTIVE, EVAL_METRIC
-from datasets.unsw import multilabel_target_column, binary_target_column
+
+from common.types import EVAL_METRIC, TRAINING_OBJECTIVE
+from datasets.unsw import binary_target_column, multilabel_target_column
 
 
 class ParsedBaseTrainingKwargs(BaseModel):
