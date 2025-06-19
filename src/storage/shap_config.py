@@ -5,6 +5,7 @@ import neptune
 from pydantic import Field
 
 from common.config import SHAPConfig
+from common.pathing import create_dir_if_not_exists
 from storage.base_storage import ARTIFACTS_DIR, BaseStorage
 
 
@@ -20,7 +21,7 @@ class LocalSHAPConfigStorage(BaseStorage[SHAPConfig]):
 
     def save_to_storage(self, config: SHAPConfig, local_file_path: str) -> None:
         """Save SHAP config to local JSON file."""
-        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+        create_dir_if_not_exists(local_file_path)
         with open(local_file_path, "w") as f:
             json.dump(config.model_dump(), f, indent=2)
 

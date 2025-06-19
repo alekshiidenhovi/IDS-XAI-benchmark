@@ -5,7 +5,7 @@ import neptune
 import xgboost as xgb
 from pydantic import Field
 
-from common.config import TrainingConfig
+from common.pathing import create_dir_if_not_exists
 from storage.base_storage import ARTIFACTS_DIR, BaseStorage
 
 
@@ -20,7 +20,7 @@ class LocalModelStorage(BaseStorage[xgb.Booster]):
     )
 
     def save_to_storage(self, model: xgb.Booster, local_file_path: str) -> None:
-        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+        create_dir_if_not_exists(local_file_path)
         model.save_model(local_file_path)
 
     @classmethod
