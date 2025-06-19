@@ -130,6 +130,7 @@ matplotlib==3.10.1
     # via
     #   -r requirements.in
     #   lime
+    #   seaborn
 matplotlib-inline==0.1.7
     # via
     #   ipykernel
@@ -163,6 +164,7 @@ numpy==2.2.6
     #   scikit-image
     #   scikit-learn
     #   scipy
+    #   seaborn
     #   shap
     #   tifffile
     #   xgboost
@@ -189,6 +191,7 @@ pandas==2.2.3
     #   -r requirements.in
     #   fastparquet
     #   neptune
+    #   seaborn
     #   shap
 parso==0.8.4
     # via jedi
@@ -293,6 +296,8 @@ scipy==1.15.3
     #   scikit-learn
     #   shap
     #   xgboost
+seaborn==0.13.2
+    # via -r requirements.in
 shap==0.47.2
     # via -r requirements.in
 simplejson==3.20.1
