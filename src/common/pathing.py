@@ -89,10 +89,12 @@ def get_explanation_time_metrics_file_path(
 
 def get_local_optimization_metrics_file_path(
     dir_path: str,
+    benchmark_name: str,
     benchmark_id: str,
 ) -> str:
     return os.path.join(
         dir_path,
+        benchmark_name,
         benchmark_id,
         "optimization_metrics.json",
     )
@@ -100,11 +102,13 @@ def get_local_optimization_metrics_file_path(
 
 def get_local_xgb_param_ranges_file_path(
     dir_path: str,
+    benchmark_name: str,
     benchmark_id: str,
     file_name: str,
 ) -> str:
     return os.path.join(
         dir_path,
+        benchmark_name,
         benchmark_id,
         file_name,
     )

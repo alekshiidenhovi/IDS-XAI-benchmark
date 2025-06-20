@@ -10,12 +10,14 @@ from common.config import SettingsConfig, TrainingConfig
 from common.metrics import OptimizationTimeMetrics, TrialMetrics
 from common.param_ranges import XGBoostParamRanges
 from common.pathing import (
+    get_local_model_file_path,
     get_local_optimization_metrics_file_path,
     get_local_xgb_param_ranges_file_path,
 )
 from common.tracking import init_neptune_run
 from common.utils import get_benchmark_id, get_current_datetime, parse_int_list
 from datasets.unsw import UNSW_NB15
+from storage.model import LocalModelStorage
 from storage.optimization_metrics import LocalOptimizationMetricsStorage
 from storage.xgb_params import LocalXGBoostParamRangesStorage
 
@@ -37,6 +39,7 @@ def optimize_xgboost(**kwargs):
 
     local_optimization_metrics_storage = LocalOptimizationMetricsStorage()
     local_xgb_param_ranges_storage = LocalXGBoostParamRangesStorage()
+    local_model_storage = LocalModelStorage()
 
     ## Settings config ##
 
@@ -74,7 +77,7 @@ def optimize_xgboost(**kwargs):
     trials: T.List[TrialMetrics] = []
 
     xgb_param_ranges = XGBoostParamRanges(
-        max_depth=[2, 12],
+        max_depth=[2, 6],
         min_child_weight=[0, 3],
         learning_rate=[0.001, 0.1],
         subsample=[0.6, 1.0],
@@ -82,14 +85,14 @@ def optimize_xgboost(**kwargs):
         reg_alpha=[0.0, 1.0],
         reg_lambda=[0.0, 1.0],
         gamma=[0.0, 1.0],
-        n_estimators=[100, 1000],
+        n_estimators=[100, 500],
     )
 
     for trial_idx, n_trials in enumerate(n_trials_list):
         validation_losses: T.List[float] = []
         execution_times: T.List[float] = []
 
-        def optimize(trial):
+        def optimize(trial: optuna.Trial):
             ## Training config ##
 
             xgboost_params = {
@@ -166,6 +169,17 @@ def optimize_xgboost(**kwargs):
             )
             training_end = time.perf_counter()
 
+            ## Model ##
+
+            local_model_file_path = get_local_model_file_path(
+                dir_path=local_model_storage.dir_path,
+                benchmark_name=benchmark_name,
+                experiment_name=f"{n_trials}-{trial.number}",
+                benchmark_id=benchmark_id,
+                file_name=local_model_storage.file_name,
+            )
+            local_model_storage.save_to_storage(model, local_model_file_path)
+
             execution_time = training_end - training_start
             val_loss = evals_result["validation"][training_config.eval_metric][-1]
 
@@ -201,16 +215,19 @@ def optimize_xgboost(**kwargs):
     )
 
     local_optimization_metrics_file_path = get_local_optimization_metrics_file_path(
-        local_optimization_metrics_storage.dir_path, benchmark_id
+        dir_path=local_optimization_metrics_storage.dir_path,
+        benchmark_name=benchmark_name,
+        benchmark_id=benchmark_id,
     )
     local_optimization_metrics_storage.save_to_storage(
         optimization_time_metrics, local_optimization_metrics_file_path
     )
 
     local_xgb_param_ranges_file_path = get_local_xgb_param_ranges_file_path(
-        local_xgb_param_ranges_storage.dir_path,
-        benchmark_id,
-        local_xgb_param_ranges_storage.file_name,
+        dir_path=local_xgb_param_ranges_storage.dir_path,
+        benchmark_name=benchmark_name,
+        benchmark_id=benchmark_id,
+        file_name=local_xgb_param_ranges_storage.file_name,
     )
     local_xgb_param_ranges_storage.save_to_storage(
         xgb_param_ranges, local_xgb_param_ranges_file_path
