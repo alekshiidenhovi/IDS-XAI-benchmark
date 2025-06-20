@@ -68,7 +68,9 @@ def training_time_benchmark(**kwargs):
     settings_config = SettingsConfig.parse_kwargs(**kwargs)
 
     local_settings_config_file_path = get_local_settings_config_file_path(
-        local_settings_config_storage, benchmark_id
+        dir_path=local_settings_config_storage.dir_path,
+        benchmark_id=benchmark_id,
+        file_name=local_settings_config_storage.file_name,
     )
     local_settings_config_storage.save_to_storage(
         config=settings_config,
