@@ -3,6 +3,7 @@ import typing as T
 
 import click
 import optuna
+import optuna.integration.xgboost
 import pandas as pd
 import xgboost as xgb
 
@@ -159,6 +160,10 @@ def optimize_xgboost(**kwargs):
             evals_result = {}
             num_boost_round = xgboost_params.pop("n_estimators")
 
+            pruning_callback = optuna.integration.XGBoostPruningCallback(
+                trial, f"validation-{training_config.eval_metric}"
+            )
+
             training_start = time.perf_counter()
             model = xgb.train(
                 params=xgboost_params,
@@ -166,6 +171,7 @@ def optimize_xgboost(**kwargs):
                 num_boost_round=num_boost_round,
                 evals=evals,
                 evals_result=evals_result,
+                callbacks=[pruning_callback],
             )
             training_end = time.perf_counter()
 
