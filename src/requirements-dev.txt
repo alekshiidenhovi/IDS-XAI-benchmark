@@ -173,6 +173,10 @@ oauthlib==3.2.2
     #   neptune
     #   requests-oauthlib
 optuna==4.4.0
+    # via
+    #   -r requirements.in
+    #   optuna-integration
+optuna-integration==4.4.0
     # via -r requirements.in
 packaging==25.0
     # via
@@ -378,4 +382,6 @@ webcolors==24.11.1
 websocket-client==1.8.0
     # via neptune
 xgboost==3.0.2
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   optuna-integration
